@@ -2,6 +2,7 @@
 #define __KERN_MM_PMM_H__
 
 #include <defs.h>
+#include <x86.h>
 #include <mmu.h>
 #include <memlayout.h>
 #include <atomic.h>
@@ -141,7 +142,14 @@ page_ref_dec(struct Page *page) {
     return page->ref;
 }
 
+inline void lgdt(struct pseudodesc *pd);
+
 extern char bootstack[], bootstacktop[];
+void boot_map_segment(pde_t *pgdir, uintptr_t la, size_t size,
+        uintptr_t pa, uint32_t perm);
+
+void map_real_mode_1M();
+void unmap_real_mode_1M();
 
 #endif /* !__KERN_MM_PMM_H__ */
 

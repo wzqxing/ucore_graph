@@ -13,10 +13,9 @@
 #include <swap.h>
 #include <proc.h>
 #include <fs.h>
+#include <vesa.h>
 
 int kern_init(void) __attribute__((noreturn));
-
-static void lab1_switch_test(void);
 
 int
 kern_init(void) {
@@ -29,8 +28,6 @@ kern_init(void) {
     cprintf("%s\n\n", message);
 
     print_kerninfo();
-
-    grade_backtrace();
 
     pmm_init();                 // init physical memory management
 
@@ -51,30 +48,23 @@ kern_init(void) {
     //LAB1: CAHLLENGE 1 If you try to do it, uncomment lab1_switch_test()
     // user/kernel mode switch test
     //lab1_switch_test();
-    
+
+//test gui driver
+    map_real_mode_1M();
+    vesa_init();
+    unmap_real_mode_1M();
+    uint32_t *screen = (uint32_t*)0xfd000000;
+    uint32_t *screen_end = (uint32_t *)0xfd300000;
+    uint32_t *p;
+    for (p = screen; p < screen_end; p ++) {
+        *p = 0x0000ff00;
+    }
+//end test
+
     cpu_idle();                 // run idle process
 }
 
-void __attribute__((noinline))
-grade_backtrace2(int arg0, int arg1, int arg2, int arg3) {
-    mon_backtrace(0, NULL, NULL);
-}
-
-void __attribute__((noinline))
-grade_backtrace1(int arg0, int arg1) {
-    grade_backtrace2(arg0, (int)&arg0, arg1, (int)&arg1);
-}
-
-void __attribute__((noinline))
-grade_backtrace0(int arg0, int arg1, int arg2) {
-    grade_backtrace1(arg0, arg2);
-}
-
-void
-grade_backtrace(void) {
-    grade_backtrace0(0, (int)kern_init, 0xffff0000);
-}
-
+#if 0
 static void
 lab1_print_cur_status(void) {
     static int round = 0;
@@ -113,4 +103,4 @@ lab1_switch_test(void) {
     lab1_switch_to_kernel();
     lab1_print_cur_status();
 }
-
+#endif

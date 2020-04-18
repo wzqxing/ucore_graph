@@ -6,6 +6,7 @@
 #include <sync.h>
 #include <pmm.h>
 #include <stdio.h>
+#include <string.h>
 
 /*
  * SLOB Allocator: Simple List Of Blocks
@@ -88,9 +89,8 @@ static void* __slob_get_free_pages(gfp_t gfp, int order)
 
 #define __slob_get_free_page(gfp) __slob_get_free_pages(gfp, 0)
 
-static inline void __slob_free_pages(unsigned long kva, int order)
-{
-  free_pages(kva2page(kva), 1 << order);
+static inline void __slob_free_pages(unsigned long kva, int order) {
+  free_pages(kva2page((void *)kva), 1 << order);
 }
 
 static void slob_free(void *b, int size);
@@ -254,6 +254,12 @@ void *
 kmalloc(size_t size)
 {
   return __kmalloc(size, 0);
+}
+
+void *kcalloc(size_t size) {
+    void *ret = __kmalloc(size, 0);
+    memset(ret, 0, size);
+    return ret;
 }
 
 

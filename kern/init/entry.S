@@ -63,8 +63,19 @@ __boot_pgdir:
 
 .set i, 0
 __boot_pt1:
+.globl __boot_pt1
 .rept 1024
     .long i * PGSIZE + (PTE_P | PTE_W)
     .set i, i + 1
 .endr
 
+.set i, 0
+__map_1m:
+.globl __map_1m
+.rept 256
+    .long i * PGSIZE + (PTE_P | PTE_W)
+    .set i, i + 1
+.endr
+.rept 768
+    .long 0x0
+.endr

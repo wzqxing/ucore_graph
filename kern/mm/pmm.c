@@ -77,7 +77,13 @@ pde_t * const vpd = (pde_t *)PGADDR(PDX(VPT), PDX(VPT), 0);
  *   - 0x20:  user data segment
  *   - 0x28:  defined for tss, initialized in gdt_init
  * */
-static struct segdesc gdt[] = {
+
+static void check_alloc_page(void);
+static void check_pgdir(void);
+static void check_boot_pgdir(void);
+
+#define MAX_GDTE 8
+struct segdesc gdt[MAX_GDTE] = {
     SEG_NULL,
     [SEG_KTEXT] = SEG(STA_X | STA_R, 0x0, 0xFFFFFFFF, DPL_KERNEL),
     [SEG_KDATA] = SEG(STA_W, 0x0, 0xFFFFFFFF, DPL_KERNEL),
@@ -86,19 +92,16 @@ static struct segdesc gdt[] = {
     [SEG_TSS]   = SEG_NULL,
 };
 
-static struct pseudodesc gdt_pd = {
+struct pseudodesc gdt_pd = {
     sizeof(gdt) - 1, (uintptr_t)gdt
 };
 
-static void check_alloc_page(void);
-static void check_pgdir(void);
-static void check_boot_pgdir(void);
 
 /* *
  * lgdt - load the global descriptor table register and reset the
  * data/code segement registers for kernel.
  * */
-static inline void
+inline void
 lgdt(struct pseudodesc *pd) {
     asm volatile ("lgdt (%0)" :: "r" (pd));
     asm volatile ("movw %%ax, %%gs" :: "a" (USER_DS));
@@ -218,8 +221,10 @@ page_init(void) {
             }
         }
     }
+    cprintf("print end\n\n\n");
     if (maxpa > KMEMSIZE) {
         maxpa = KMEMSIZE;
+        cprintf("pa: %llu, KMEMSIZE: %llu\n", maxpa, (uint64_t)KMEMSIZE);
     }
 
     extern char end[];
@@ -227,7 +232,11 @@ page_init(void) {
     npage = maxpa / PGSIZE;
     pages = (struct Page *)ROUNDUP((void *)end, PGSIZE);
 
+    cprintf("npage: %lu\n", npage);
     for (i = 0; i < npage; i ++) {
+        if (i > 77100) {
+            cprintf("i: %d, pages: %p\n", i, pages + i);
+        }
         SetPageReserved(pages + i);
     }
 
@@ -259,7 +268,7 @@ page_init(void) {
 //  size: memory size
 //  pa:   physical address of this memory
 //  perm: permission of this memory  
-static void
+void
 boot_map_segment(pde_t *pgdir, uintptr_t la, size_t size, uintptr_t pa, uint32_t perm) {
     assert(PGOFF(la) == PGOFF(pa));
     size_t n = ROUNDUP(size + PGOFF(la), PGSIZE) / PGSIZE;
@@ -761,4 +770,27 @@ print_pgdir(void) {
         }
     }
     cprintf("--------------------- END ---------------------\n");
+}
+
+
+/*
+ * only used in kernel
+ * */
+extern pte_t __map_1m;
+pte_t *map_1m = &__map_1m;
+void map_real_mode_1M() {
+    int i;
+    boot_pgdir[0] = ((uint32_t)map_1m - (uint32_t)KERNBASE) + (PTE_P | PTE_U | PTE_W);
+    for (i = 0; i < 256; i ++) {
+        tlb_invalidate(boot_pgdir, PGSIZE * i); 
+    }
+}
+
+void unmap_real_mode_1M() {
+    int i;
+    boot_pgdir[0] = 0;
+    for (i = 0; i < 256; i ++) {
+        tlb_invalidate(boot_pgdir, PGSIZE * i);
+    }
+    return;
 }

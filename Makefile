@@ -51,7 +51,7 @@ HOSTCFLAGS	:= -g -Wall -O2 -D_FILE_OFFSET_BITS=64
 GDB		:= $(GCCPREFIX)gdb
 
 CC		:= $(GCCPREFIX)gcc
-CFLAGS	:= -fno-builtin -fno-PIC -Wall -ggdb -m32 -gstabs -nostdinc $(DEFS)
+CFLAGS	:= -fno-builtin -fno-PIC -Wall -Wno-unused-function -Wno-unused-variable -ggdb -m32 -gstabs -nostdinc $(DEFS)
 CFLAGS	+= $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector)
 CTYPE	:= c S
 
@@ -168,7 +168,9 @@ KINCLUDE	+= kern/debug/ \
 			   kern/fs/swap/ \
 			   kern/fs/vfs/ \
 			   kern/fs/devs/ \
-			   kern/fs/sfs/ 
+			   kern/fs/sfs/
+
+#			   kern/gui
 
 
 KSRCDIR		+= kern/init \
@@ -186,10 +188,15 @@ KSRCDIR		+= kern/init \
 			   kern/fs/vfs \
 			   kern/fs/devs \
 			   kern/fs/sfs
+#			   kern/gui
 
 KCFLAGS		+= $(addprefix -I,$(KINCLUDE))
 
 $(call add_files_cc,$(call listf_cc,$(KSRCDIR)),kernel,$(KCFLAGS))
+
+bios32_helper:
+	nasm -f elf32 -O0 kern/driver/bios32_helper.asm -o obj/kern/driver/bios32_helper.o
+
 
 KOBJS	= $(call read_packet,kernel libs)
 
@@ -198,9 +205,9 @@ kernel = $(call totarget,kernel)
 
 $(kernel): tools/kernel.ld
 
-$(kernel): $(KOBJS)
+$(kernel): $(KOBJS) bios32_helper
 	@echo + ld $@
-	$(V)$(LD) $(LDFLAGS) -T tools/kernel.ld -o $@ $(KOBJS)
+	$(V)$(LD) $(LDFLAGS) -T tools/kernel.ld -o $@ $(KOBJS) obj/kern/driver/bios32_helper.o
 	@$(OBJDUMP) -S $@ > $(call asmfile,kernel)
 	@$(OBJDUMP) -t $@ | $(SED) '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $(call symfile,kernel)
 
@@ -305,17 +312,17 @@ TARGETS: $(TARGETS)
 
 .DEFAULT_GOAL := TARGETS
 
-QEMUOPTS = -hda $(UCOREIMG) -drive file=$(SWAPIMG),media=disk,cache=writeback -drive file=$(SFSIMG),media=disk,cache=writeback 
+QEMUOPTS = -hda $(UCOREIMG) -drive file=$(SWAPIMG),media=disk,cache=writeback -drive file=$(SFSIMG),media=disk,cache=writeback
 
 .PHONY: qemu qemu-nox debug debug-nox monitor
 qemu-mon: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
 	$(V)$(QEMU) -monitor stdio $(QEMUOPTS) -serial null
 qemu: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
-	$(V)$(QEMU) -serial stdio $(QEMUOPTS) -parallel null
+	$(V)$(QEMU) -serial stdio $(QEMUOPTS) -parallel null -vga std
 #	$(V)$(QEMU) -parallel stdio $(QEMUOPTS) -serial null
 
 qemu-nox: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
-	$(V)$(QEMU) -serial mon:stdio $(QEMUOPTS) -nographic
+	$(V)$(QEMU) -serial stdio $(QEMUOPTS) -nographic
 
 monitor: $(UCOREIMG) $(SWAPING) $(SFSIMG)
 	$(V)$(QEMU) -monitor stdio $(QEMUOPTS) -serial null
@@ -326,9 +333,7 @@ dbg4ec: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
 	$(V)$(QEMU) -S -s -parallel stdio $(QEMUOPTS) -serial null
 
 debug: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
-	$(V)$(QEMU) -S -s -parallel stdio $(QEMUOPTS) -serial null &
-	$(V)sleep 2
-	$(V)$(TERMINAL) -e "$(GDB) -q -x tools/gdbinit"
+	$(V)$(QEMU) -S -s -serial file:log $(QEMUOPTS) -parallel null -monitor stdio -vga std -nographic
 
 debug-nox: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
 	$(V)$(QEMU) -S -s -serial mon:stdio $(QEMUOPTS) -nographic &

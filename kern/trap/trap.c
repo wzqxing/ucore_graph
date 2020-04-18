@@ -19,7 +19,7 @@
 
 #define TICK_NUM 100
 
-static void print_ticks() {
+void print_ticks() {
     cprintf("%d ticks\n",TICK_NUM);
 #ifdef DEBUG_GRADE
     cprintf("End of Test.\n");
@@ -33,9 +33,9 @@ static void print_ticks() {
  * Must be built at run time because shifted function addresses can't
  * be represented in relocation records.
  * */
-static struct gatedesc idt[256] = {{0}};
+struct gatedesc idt[256] = {{0}};
 
-static struct pseudodesc idt_pd = {
+struct pseudodesc idt_pd = {
     sizeof(idt) - 1, (uintptr_t)idt
 };
 
