@@ -96,7 +96,7 @@ struct pseudodesc gdt_pd = {
     sizeof(gdt) - 1, (uintptr_t)gdt
 };
 
-
+#if 0
 /* *
  * lgdt - load the global descriptor table register and reset the
  * data/code segement registers for kernel.
@@ -112,6 +112,7 @@ lgdt(struct pseudodesc *pd) {
     // reload cs
     asm volatile ("ljmp %0, $1f\n 1:\n" :: "i" (KERNEL_CS));
 }
+#endif
 
 /* *
  * load_esp0 - change the ESP0 in default task state segment,

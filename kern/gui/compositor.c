@@ -1,47 +1,50 @@
 #include <compositor.h>
 #include <vesa.h>
 #include <math.h>
+#include <kmalloc.h>
 #include <string.h>
-#include <gui_bit_map.h>
+#include <bmp.h>
+#include <stdio.h>
 #include <generic_tree.h>
 #include <font.h>
+#include <math.h>
+#include <mouse.h>
 #include <blend.h>
 
 
-gtree_t *windows_tree;
-list_entry_t windows_list;
-window_t *windows_array[200];
+gtree_t * windows_tree;
+list_t * windows_list;
+window_t * windows_array[200];
 canvas_t canvas;
 
 // Keep a reference to desktop bar
-window_t *desktop_bar;
+window_t * desktop_bar;
 
-window_t *focus_w;
+window_t * focus_w;
 
 // Intermediate frame buffer
-uint32_t *intermediate_framebuffer;
+uint32_t * intermediate_framebuffer;
 
 /*
  * In Ubuntu's window's title bar, each row's color increments, instead of having one color for the entire title bar
  */
-uint32_t title_bar_colors[TITLE_BAR_HEIGHT] = {
-    0xff59584f, 0xff5f5d53, 0xff58564e, 0xff57554d, 0xff56544c, 0xff55534b,
-    0xff54524a, 0xff525049, 0xff514f48, 0xff504e47, 0xff4e4c45, 0xff4e4c45,
-    0xff4c4a44, 0xff4b4943, 0xff4a4842, 0xff484741, 0xff46453f, 0xff45443f,
-    0xff44433e, 0xff43423d, 0xff42413c, 0xff403f3a, 0xff3f3e3a};
+uint32_t title_bar_colors[TITLE_BAR_HEIGHT] = {0xff59584f, 0xff5f5d53, 0xff58564e, 0xff57554d, 0xff56544c, 0xff55534b, \
+    0xff54524a, 0xff525049, 0xff514f48, 0xff504e47, 0xff4e4c45, 0xff4e4c45, \
+        0xff4c4a44, 0xff4b4943, 0xff4a4842, 0xff484741, 0xff46453f, 0xff45443f, \
+        0xff44433e, 0xff43423d, 0xff42413c, 0xff403f3a, 0xff3f3e3a};
 
 rect_t rects[2];
 
 int left_button_held_down, right_button_held_down;
 
 int moving = 0;
-window_t *moving_window;
+window_t * moving_window;
 point_t last_mouse_position;
 
 int close_highlight, minimize_highlight, maximize_highlight;
 
-bmp_t *normal_close_bmp, *normal_minimize_bmp, *normal_maximize_bmp;
-bmp_t *highlight_close_bmp, *highlight_minimize_bmp, *highlight_maximize_bmp;
+bmp_t * normal_close_bmp, * normal_minimize_bmp, *normal_maximize_bmp;
+bmp_t * highlight_close_bmp, * highlight_minimize_bmp, *highlight_maximize_bmp;
 
 rect_region_t close_region, minimize_region, maximize_region;
 rect_region_t highlight_close_region, highlight_minimize_region, highlight_maximize_region;
@@ -55,37 +58,34 @@ void print_windows_depth() {
 #if DEBUG_GUI
     int size = 0;
     tree2array(windows_tree, (void**)windows_array, &size);
-    int i;
-    for (i = 0; i < size; i ++) {
-        window_t *curr_w = windows_array[i];
+
+    for(int i = 0; i < size; i++) {
+        window_t * curr_w = windows_array[i];
         cprintf("* %s, depth: %d\n", curr_w->name, curr_w->depth);
         cprintf("under_windows: [");
         foreach(t, curr_w->under_windows) {
             window_t * w = t->val;
-            qemu_printf("%s ", w->name);
+            cprintf("%s ", w->name);
         }
-        qemu_printf("]\n");
-        qemu_printf("above_windows: [");
+        cprintf("]\n");
+        cprintf("above_windows: [");
         foreach(t, curr_w->above_windows) {
             window_t * w = t->val;
-            qemu_printf("%s ", w->name);
+            cprintf("%s ", w->name);
         }
-        qemu_printf("]\n\n");
+        cprintf("]\n\n");
     }
 #endif
 }
 
-window_t *get_focus_window() {
+window_t * get_focus_window() {
     return focus_w;
 }
 
-
-
-#if 0
 /*
  * The window needs to receive user inputs like mouse movement, keyboard keypress, and others.
  * */
-void window_message_handler(winmsg_t *msg) {
+void window_message_handler(winmsg_t * msg) {
     int point_at_close = 0, point_at_minimize = 0, point_at_maximize = 0;
     window_t * w = msg->window;
     // char key_pressed;
@@ -235,13 +235,10 @@ void window_message_handler(winmsg_t *msg) {
     }
 }
 
-#endif
-
-#if 0
 /*
  * Convenient function for creating an alertbox window
  */
-window_t * alertbox_create(window_t *parent, int x, int y, char * title, char * text) {
+window_t * alertbox_create(window_t * parent, int x, int y, char * title, char * text) {
     window_t * alertbox = window_create(parent, x, y, 200, 160, WINDOW_ALERT, "window_classic");
     window_add_title_bar(alertbox);
     window_add_close_button(alertbox);
@@ -257,24 +254,18 @@ window_t * alertbox_create(window_t *parent, int x, int y, char * title, char * 
 
     return alertbox;
 }
-#endif
 
 
 /*
  * Window create, given x,y, width,heigt, type, name, and parent window.
  */
-window_t *window_create(window_t *parent, int x, int y, int width, int height,
-        int type, char *name)
-{
-    gtreenode_t *subroot = NULL;
+window_t *  window_create(window_t * parent, int x, int y, int width, int height, int type, char * name) {
+    gtreenode_t * subroot;
     // Allocate spae and initialize
-    window_t *w = kcalloc(sizeof(window_t), 1);
-    if (w == NULL) {
-        goto FAILED;
-    }
-    strncpy(w->name, name, sizeof(w->name) / sizeof(char) - 1);
-    list_init(&(w->under_window));
-    list_init(&(w->above_windows));
+    window_t * w = kcalloc(sizeof(window_t), 1);
+    strcpy(w->name, name);
+    w->under_windows = list_create();
+    w->above_windows = list_create();
     // A window's x and y coordinates should be relative to its parent(when interpreting x/y value of a window)
     w->x = x;
     w->y = y;
@@ -285,45 +276,34 @@ window_t *window_create(window_t *parent, int x, int y, int width, int height,
     w->is_minimized = 0;
 
     w->frame_buffer = kmalloc(width * height * 4);
-    if (w->frame_buffer == NULL) {
-        goto FAILED;
-    }
     w->blended_framebuffer = kmalloc(width * height * 4);
-    if (w->blended_framebuffer == NULL) {
-        goto FAILED;
-    }
-    if (parent != NULL) {
-        if(strcmp(name, "window_red") == 0) {
+    if(parent != NULL) {
+        if(strcmp(name, "window_red") == 0)
             memsetdw(w->frame_buffer, 0xffff0000, width * height);
-        } else if(strcmp(name, "window_green") == 0) {
+        else if(strcmp(name, "window_green") == 0)
             memsetdw(w->frame_buffer, 0xff00ff00, width * height);
-        } else if(strcmp(name, "window_blue") == 0) {
+        else if(strcmp(name, "window_blue") == 0)
             memsetdw(w->frame_buffer, 0xff0000ff, width * height);
-        } else if(strcmp(name, "window_black") == 0) {
+        else if(strcmp(name, "window_black") == 0)
             memsetdw(w->frame_buffer, 0xff300a24, width * height);
-        } else if(strcmp(name, "window_classic") == 0) {
+        else if(strcmp(name, "window_classic") == 0)
             memsetdw(w->frame_buffer, 0xffeeeeee, width * height);
-        } else if(strcmp(name, "window_xp") == 0) {
+        else if(strcmp(name, "window_xp") == 0)
             memsetdw(w->frame_buffer, 0xffF7F3F0, width * height);
-        } else if(strcmp(name, "alertbox_button") == 0) {
+        else if(strcmp(name, "alertbox_button") == 0)
             memsetdw(w->frame_buffer, 0xffF7F3F0, width * height);
-        } else if(strcmp(name, "desktop_bar") == 0) {
+        else if(strcmp(name, "desktop_bar") == 0)
             memsetdw(w->frame_buffer, 0xffDCE8EC , width * height);
-        } else {
-            cprintf("invaild name %s\n", name);
-            goto FAILED;
-        }
+
     }
     // Add it to the winodw tree
-    if (type == WINDOW_SUPER) {
+    if(type == WINDOW_SUPER)
         subroot = NULL;
-    } else if(type == WINDOW_NORMAL) {
+    else if(type == WINDOW_NORMAL)
         subroot = windows_tree->root;
-    } else {
+    else {
         // Every window except the super window should have a parent
-        if (parent != NULL) {
-            subroot = parent->self;
-        }
+        subroot = parent->self;
     }
     // Keep a reference to the treenode in window structure
     w->self = tree_insert(windows_tree, subroot, w);
@@ -331,22 +311,10 @@ window_t *window_create(window_t *parent, int x, int y, int width, int height,
     add_under_windows(w);
     w->depth = 0;
 
-    if(strcmp(w->name, "desktop_bar") == 0) {
+    if(strcmp(w->name, "desktop_bar") == 0)
         desktop_bar = w;
-    }
     focus_w = w;
     return w;
-FAILED:
-    if (w != NULL) {
-        if (w->frame_buffer != NULL) {
-            kfree(w->frame_buffer);
-        }
-        if (w->blended_framebuffer != NULL) {
-            kfree(w->blended_framebuffer);
-        }
-        
-    }
-    return NULL;
 }
 
 void window_set_focus(window_t * w) {
@@ -451,7 +419,7 @@ void add_under_windows(window_t * w) {
 /*
  * Helper function for add_under_windows
  */
-void recur_add_under_windows(window_t *w, gtreenode_t *subroot) {
+void recur_add_under_windows(window_t * w, gtreenode_t * subroot) {
     // Stop exploring any branches under w
     window_t * curr_w = subroot->value;
     if(curr_w == w) return;
@@ -750,7 +718,7 @@ void blend_window_rect(window_t * top_w, window_t * bottom_w) {
  * Maximize window
  * */
 void maximize_window(window_t * w) {
-    qemu_printf("Hi, this is not implemented yet\n");
+    cprintf("Hi, this is not implemented yet\n");
 }
 
 /*
@@ -918,7 +886,7 @@ uint32_t get_window_pixel(window_t * w, int x, int y) {
 /*
  * Is a point in the window?
  */
-int is_point_in_window(int x, int y, window_t *w) {
+int is_point_in_window(int x, int y, window_t * w) {
     rect_t r;
     point_t p = get_device_coordinates(w);
     r.x = p.x;
@@ -951,13 +919,13 @@ point_t get_relative_coordinates(window_t * w, int x, int y) {
 /*
  * This function convert relative coordinates to device one
  */
-point_t get_device_coordinates(window_t *w) {
+point_t get_device_coordinates(window_t * w) {
     point_t p;
     p.x = w->x;
     p.y = w->y;
     // Calculate the device xy coords
-    window_t *runner = w->parent;
-    while (runner != NULL) {
+    window_t * runner = w->parent;
+    while(runner != NULL) {
         p.x += runner->x;
         p.y += runner->y;
         runner = runner->parent;
@@ -1004,17 +972,17 @@ int is_window_overlap(window_t * w1, window_t * w2) {
  * In my GUI system, instead of writing window's pixels to the video memory directly, I'll first write them to a intermediate buffer,
  * and then sending the buffer to video memory. This avoids screen flickering
  */
-void video_memory_update(rect_t *rects, int len) {
-    int i, j, k;
+void video_memory_update(rect_t * rects, int len) {
     if(rects == NULL) {
-        for(i = 0; i < 1024 * 768; i++) {
+        for(int i = 0; i < 1024 * 768; i++) {
             screen[i] = intermediate_framebuffer[i];
         }
-    } else {
-        for(i = 0; i < len; i++) {
+    }
+    else {
+        for(int i = 0; i < len; i++) {
             rect_t rect = rects[i];
-            for(j = rect.y;  j < rect.y + rect.height; j++) {
-                for(k = rect.x; k < rect.x + rect.width; k++) {
+            for(int j = rect.y;  j < rect.y + rect.height; j++) {
+                for(int k = rect.x; k < rect.x + rect.width; k++) {
                     int idx = get_pixel_idx(&canvas, k, j);
                     screen[idx] = intermediate_framebuffer[idx];
                 }
@@ -1024,17 +992,9 @@ void video_memory_update(rect_t *rects, int len) {
 }
 
 
-int close_button_init() {
+void close_button_init() {
     normal_close_bmp = bmp_create("/normal_close.bmp");
-    if (normal_close_bmp == NULL) {
-        cprintf("normal_close.bmp bmp_create error\n");
-        return -1;
-    }
     highlight_close_bmp = bmp_create("/red_highlight.bmp");
-    if (highlight_close_bmp == NULL) {
-        cprintf("red_highlight.bmp bmp_create error\n");
-        return -1;
-    }
     close_region.r.x = 7; // (7)
     close_region.r.y = 3;
     close_region.r.width = normal_close_bmp->width;
@@ -1049,8 +1009,8 @@ int close_button_init() {
 }
 
 void minimize_button_init() {
-    normal_minimize_bmp = bitmap_create("/normal_minimize.bmp");
-    highlight_minimize_bmp = bitmap_create("/minimize_highlight.bmp");
+    normal_minimize_bmp = bmp_create("/normal_minimize.bmp");
+    highlight_minimize_bmp = bmp_create("/minimize_highlight.bmp");
     minimize_region.r.x = 7 + 17 + 2; // (26)
     minimize_region.r.y = 3;
     minimize_region.r.width = normal_minimize_bmp->width;
@@ -1065,8 +1025,8 @@ void minimize_button_init() {
 }
 
 void maximize_button_init() {
-    normal_maximize_bmp = bitmap_create("/normal_maximize.bmp");
-    highlight_maximize_bmp = bitmap_create("/maximize_highlight.bmp");
+    normal_maximize_bmp = bmp_create("/normal_maximize.bmp");
+    highlight_maximize_bmp = bmp_create("/maximize_highlight.bmp");
     maximize_region.r.x = 7 + 17 + 2 + 17 + 2; // (45)
     maximize_region.r.y = 3;
     maximize_region.r.width = normal_maximize_bmp->width;
@@ -1093,13 +1053,13 @@ void compositor_init() {
     screen_height = vesa_get_resolution_y();
     canvas = canvas_create(1024, 768, intermediate_framebuffer);
     // windows_list is only used when redrawing windows
-    list_init(&windows_list);
+    windows_list = list_create();
     // Initialize window tree to manage the windows to be created
     windows_tree = tree_create();
     // Create a base window, this should be the parent of all windows(super window)
     window_t * w = window_create(NULL, 0, 0, screen_width, screen_height, WINDOW_SUPER, "desktop");
-    bitmap_t * wallpaper = bitmap_create("/wallpaper.bmp");
-    bitmap_to_framebuffer(wallpaper, w->frame_buffer);
+    bmp_t * wallpaper = bmp_create("wallpaper.bmp");
+    bmp_to_framebuffer(wallpaper, w->frame_buffer);
     blend_windows(w);
     // Initialize some data for buttons
     close_button_init();

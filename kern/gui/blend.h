@@ -1,6 +1,6 @@
 #ifndef BLEND_H
 #define BLEND_H
-#include <system.h>
+#include <x86.h>
 
 
 #define GET_ALPHA(color) ((color >> 24) & 0x000000FF)

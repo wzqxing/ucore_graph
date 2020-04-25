@@ -16,6 +16,7 @@
 #include <sched.h>
 #include <sync.h>
 #include <proc.h>
+#include <mouse.h>
 
 #define TICK_NUM 100
 
@@ -254,6 +255,10 @@ trap_dispatch(struct trapframe *tf) {
           extern void dev_stdin_write(char c);
           dev_stdin_write(c);
         }
+        break;
+    case IRQ_OFFSET + IRQ_MOUSE:
+        cprintf("mouse Interrupt\n");
+        mouse_handler();
         break;
     //LAB1 CHALLENGE 1 : YOUR CODE you should modify below codes.
     case T_SWITCH_TOU:

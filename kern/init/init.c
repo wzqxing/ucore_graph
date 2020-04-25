@@ -14,6 +14,7 @@
 #include <proc.h>
 #include <fs.h>
 #include <vesa.h>
+#include <gui.h>
 
 int kern_init(void) __attribute__((noreturn));
 
@@ -50,15 +51,7 @@ kern_init(void) {
     //lab1_switch_test();
 
 //test gui driver
-    map_real_mode_1M();
-    vesa_init();
-    unmap_real_mode_1M();
-    uint32_t *screen = (uint32_t*)0xfd000000;
-    uint32_t *screen_end = (uint32_t *)0xfd300000;
-    uint32_t *p;
-    for (p = screen; p < screen_end; p ++) {
-        *p = 0x0000ff00;
-    }
+//    gui_init();
 //end test
 
     cpu_idle();                 // run idle process

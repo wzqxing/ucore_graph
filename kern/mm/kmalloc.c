@@ -256,9 +256,10 @@ kmalloc(size_t size)
   return __kmalloc(size, 0);
 }
 
-void *kcalloc(size_t size) {
-    void *ret = __kmalloc(size, 0);
-    memset(ret, 0, size);
+void *kcalloc(size_t size, size_t n) {
+    size_t real_size = size * n;
+    void *ret = __kmalloc(real_size, 0);
+    memset(ret, 0, real_size);
     return ret;
 }
 

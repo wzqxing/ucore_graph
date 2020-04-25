@@ -142,7 +142,6 @@ page_ref_dec(struct Page *page) {
     return page->ref;
 }
 
-inline void lgdt(struct pseudodesc *pd);
 
 extern char bootstack[], bootstacktop[];
 void boot_map_segment(pde_t *pgdir, uintptr_t la, size_t size,
@@ -150,6 +149,23 @@ void boot_map_segment(pde_t *pgdir, uintptr_t la, size_t size,
 
 void map_real_mode_1M();
 void unmap_real_mode_1M();
+
+/* *
+ * lgdt - load the global descriptor table register and reset the
+ * data/code segement registers for kernel.
+ * */
+static inline void
+lgdt(struct pseudodesc *pd) {
+    asm volatile ("lgdt (%0)" :: "r" (pd));
+    asm volatile ("movw %%ax, %%gs" :: "a" (USER_DS));
+    asm volatile ("movw %%ax, %%fs" :: "a" (USER_DS));
+    asm volatile ("movw %%ax, %%es" :: "a" (KERNEL_DS));
+    asm volatile ("movw %%ax, %%ds" :: "a" (KERNEL_DS));
+    asm volatile ("movw %%ax, %%ss" :: "a" (KERNEL_DS));
+    // reload cs
+    asm volatile ("ljmp %0, $1f\n 1:\n" :: "i" (KERNEL_CS));
+}
+
 
 #endif /* !__KERN_MM_PMM_H__ */
 

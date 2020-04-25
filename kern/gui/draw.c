@@ -11,7 +11,7 @@
  * */
 
 // Want to draw something on screen ? write pixel to screen! Keep in mind though each pixel is 24 bit here(hard code 24-bit pixel for simplicity here).
-uint32_t *screen = NULL;
+uint32_t * screen = NULL;
 // Default fill color
 uint32_t fill_color;
 int screen_width, screen_height;

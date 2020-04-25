@@ -1,7 +1,7 @@
 #ifndef FONT_H
 #define FONT_H
 
-#include <system.h>
+#include <x86.h>
 #include <draw.h>
 
 #define FNT_FONTHEIGHT 8

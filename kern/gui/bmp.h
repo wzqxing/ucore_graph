@@ -1,5 +1,8 @@
-#ifndef __BMP_H
-#define __BMP_H
+#ifndef BITMAP_H
+#define BITMAP_H
+#include <stdio.h>
+#include <kmalloc.h>
+#include <vesa.h>
 
 typedef struct tagBITMAPFILEHEADER {
     unsigned short bfType;
@@ -21,30 +24,30 @@ typedef struct tagBITMAPINFOHEADER {
     long biYPelsPerMeter;
     unsigned int biClrUsed;
     unsigned int biClrImportant;
-} bmp_infoheader_t;
+}bmp_infoheader_t;
 
 typedef struct bmp {
     unsigned int width;
     unsigned int height;
-    char *image_bytes;
-    char *buf;
+    char * image_bytes;
+    char * buf;
     unsigned int total_size;
     uint32_t bpp;
-} bmp_t;
+}bmp_t;
 
 typedef struct palette {
     unsigned char r;
     unsigned char g;
     unsigned char b;
     unsigned char a;
-} palette_t;
+}palette_t;
 
-bmp_t *bmp_create(char *filename);
+bmp_t * bmp_create(char * filename);
 
-void bmp_display(bmp_t *bmp);
+void bmp_display(bmp_t * bmp);
 
-void bmp_to_framebuffer(bitmap_t *bmp, uint32_t *frame_buffer);
+void bmp_to_framebuffer(bmp_t * bmp, uint32_t * frame_buffer);
 
-void bmp_to_framebuffer2(bitmap_t *bmp, uint32_t *frame_buffer);
+void bmp_to_framebuffer2(bmp_t * bmp, uint32_t * frame_buffer);
 
 #endif

@@ -15,6 +15,7 @@
 #include <fs.h>
 #include <vfs.h>
 #include <sysfile.h>
+#include <gui.h>
 
 /* ------------- process/thread mechanism design&implementation -------------
 (an simplified Linux process/thread mechanism )
@@ -839,6 +840,7 @@ do_execve(const char *name, int argc, const char **argv) {
 
     /* sysfile_open will check the first argument path, thus we have to use a user-space pointer, and argv[0] may be incorrect */    
     int fd;
+    cprintf("%s:%d, exec path %s\n", __FILE__, __LINE__, path);
     if ((ret = fd = sysfile_open(path, O_RDONLY)) < 0) {
         goto execve_exit;
     }
@@ -877,6 +879,7 @@ do_yield(void) {
 // NOTE: only after do_wait function, all resources of the child proces are free.
 int
 do_wait(int pid, int *code_store) {
+    cprintf("do_wait %d\n", pid);
     struct mm_struct *mm = current->mm;
     if (code_store != NULL) {
         if (!user_mem_check(mm, (uintptr_t)code_store, sizeof(int), 1)) {
@@ -1013,7 +1016,10 @@ init_main(void *arg) {
         panic("create user_main failed.\n");
     }
  extern void check_sync(void);
+#if 0
     check_sync();                // check philosopher sync problem
+#endif
+    gui_init();
 
     while (do_wait(0, NULL) == 0) {
         schedule();

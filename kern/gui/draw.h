@@ -7,7 +7,7 @@ typedef struct rect {
     int y;
     int width;
     int height;
-} rect_t;
+}rect_t;
 
 typedef struct rect_region {
     rect_t r;

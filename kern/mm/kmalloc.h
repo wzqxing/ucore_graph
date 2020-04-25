@@ -8,7 +8,7 @@
 void kmalloc_init(void);
 
 void *kmalloc(size_t n);
-void *kcalloc(size_t n);
+void *kcalloc(size_t, size_t);
 void kfree(void *objp);
 
 size_t kallocated(void);

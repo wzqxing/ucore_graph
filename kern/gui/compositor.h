@@ -1,6 +1,6 @@
 #ifndef GUI_COMPOSITOR_H
 #define GUI_COMPOSITOR_H
-#include <system.h>
+#include <x86.h>
 #include <generic_tree.h>
 #include <draw.h>
 
@@ -82,14 +82,14 @@ typedef struct window {
     gtreenode_t * self;
 
     // Keep track of a list of windows that's under/above this window()
-    list_entry_t under_windows;
-    list_entry_t above_windows;
+    list_t * under_windows;
+    list_t * above_windows;
 
     int depth;
 
     // This rect maintains the rectangle portion of this window that may need to be redrawn next
     rect_t intersection_rect;
-} window_t;
+}window_t;
 
 /*
  * The winmsg struct will be passed from mouse/keyboard driver or others, to the central window message handler
@@ -114,34 +114,34 @@ typedef struct winmsg {
     char key_pressed;
 
     // Involved window
-    window_t *window;
-} winmsg_t;
+    window_t * window;
+}winmsg_t;
 
 typedef struct window_dirty_region {
-    window_t *w;
+    window_t * w;
     rect_t rects[3];
     int len;
-} window_dirty_region_t;
+}window_dirty_region_t;
 
-void calculate_intersections(rect_t *rect, window_t **array, int *return_size);
+void calculate_intersections(rect_t * rect, window_t ** array, int * return_size);
 
-void sort_windows_array(window_t **array, int size);
+void sort_windows_array(window_t ** array, int size);
 
-void window_add_round_corner(window_t *w);
+void window_add_round_corner(window_t * w);
 
 int is_moving();
 
-window_t *get_focus_window();
+window_t * get_focus_window();
 
 void print_windows_depth();
 
-void window_set_focus(window_t *w);
+void window_set_focus(window_t * w);
 
-void copy_rect(uint32_t *dst, rect_t r);
+void copy_rect(uint32_t * dst, rect_t r);
 
 void compositor_init();
 
-window_t *window_create(window_t *parent, int x, int y, int width, int height, int type, char *name);
+window_t *  window_create(window_t * parent, int x, int y, int width, int height, int type, char * name);
 
 void window_display(window_t * w, rect_t * rects, int size);
 
@@ -151,61 +151,61 @@ void display_recur(gtreenode_t * t);
 
 void move_window(window_t * w, int x, int y);
 
-window_t *get_super_window();
+window_t * get_super_window();
 
-window_t *get_desktop_bar();
+window_t * get_desktop_bar();
 
-void blend_windows(window_t *w);
+void blend_windows(window_t * w);
 
-void blend_title_bar(window_t *w, int left);
+void blend_title_bar(window_t * w, int left);
 
-void blend_window_rect(window_t *top_w, window_t *bottom_w);
+void blend_window_rect(window_t * top_w, window_t * bottom_w);
 
-void maximize_window(window_t *w);
+void maximize_window(window_t * w);
 
-void minimize_window(window_t *w);
+void minimize_window(window_t * w);
 
-void close_window(window_t *w);
+void close_window(window_t * w);
 
-void resize_window(window_t *w, int new_width, int new_height);
+void resize_window(window_t * w, int new_width, int new_height);
 
-void add_under_windows(window_t *w);
+void add_under_windows(window_t * w);
 
-void recur_add_under_windows(window_t *w, gtreenode_t *subroot);
+void recur_add_under_windows(window_t * w, gtreenode_t * subroot);
 
-window_t *query_window_by_point(int x, int y);
+window_t * query_window_by_point(int x, int y);
 
 void repaint(rect_t r);
 
-void find_possible_windows(int x, int y, gtreenode_t *subroot, window_t **possible_windows, int *num);
+void find_possible_windows(int x, int y, gtreenode_t * subroot, window_t ** possible_windows, int * num);
 
-uint32_t get_window_pixel(window_t *w, int x, int y);
+uint32_t get_window_pixel(window_t * w, int x, int y);
 
-int is_point_in_window(int x, int y, window_t *w);
+int is_point_in_window(int x, int y, window_t * w);
 
-canvas_t *get_screen_canvas();
+canvas_t * get_screen_canvas();
 
-void window_add_title_bar(window_t *w);
+void window_add_title_bar(window_t * w);
 
-void window_add_close_button(window_t *w);
+void window_add_close_button(window_t * w);
 
-void window_add_minimize_button(window_t *w);
+void window_add_minimize_button(window_t * w);
 
-void window_add_maximize_button(window_t *w);
+void window_add_maximize_button(window_t * w);
 
-void window_message_handler(winmsg_t *msg);
+void window_message_handler(winmsg_t * msg);
 
-point_t get_device_coordinates(window_t *w);
+point_t get_device_coordinates(window_t * w);
 
-void get_device_rect(rect_t *out_rect, rect_t *relative_rect, point_t *p);
+void get_device_rect(rect_t * out_rect, rect_t * relative_rect, point_t * p);
 
-window_t *alertbox_create(window_t *parent, int x, int y, char *title, char *text);
+window_t * alertbox_create(window_t * parent, int x, int y, char * title, char * text);
 
-point_t get_relative_coordinates(window_t *w, int x, int y);
+point_t get_relative_coordinates(window_t * w, int x, int y);
 
 point_t get_mouse_position_before_move();
 
-int is_window_overlap(window_t *w1, window_t *w2);
+int is_window_overlap(window_t * w1, window_t * w2);
 
 void video_memory_update();
 

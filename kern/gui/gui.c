@@ -2,17 +2,16 @@
 #include <compositor.h>
 #include <draw.h>
 #include <font.h>
-#include <gui_bit_map.h>
+#include <bmp.h>
 #include <blend.h>
 #include <vesa.h>
 #include <memlayout.h>
 #include <pmm.h>
-extern pte_t __map_1m;
-pte_t *__map_1m = &__map_1m;
 
 void gui_init() {
     map_real_mode_1M();
     vesa_init();    
+    mouse_init();
     compositor_init();
     window_t * red_w = window_create(get_super_window(), 20, 300, 750, 450, WINDOW_NORMAL, "window_black");
     window_add_title_bar(red_w);
@@ -26,4 +25,5 @@ void gui_init() {
     window_add_round_corner(red_w);
     blend_windows(red_w);
     unmap_real_mode_1M();
+    cprintf("gui init successed!\n");
 }

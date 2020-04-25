@@ -168,9 +168,8 @@ KINCLUDE	+= kern/debug/ \
 			   kern/fs/swap/ \
 			   kern/fs/vfs/ \
 			   kern/fs/devs/ \
-			   kern/fs/sfs/
-
-#			   kern/gui
+			   kern/fs/sfs/ \
+			   kern/gui
 
 
 KSRCDIR		+= kern/init \
@@ -187,8 +186,8 @@ KSRCDIR		+= kern/init \
 			   kern/fs/swap \
 			   kern/fs/vfs \
 			   kern/fs/devs \
-			   kern/fs/sfs
-#			   kern/gui
+			   kern/fs/sfs \
+			   kern/gui
 
 KCFLAGS		+= $(addprefix -I,$(KINCLUDE))
 
