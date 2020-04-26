@@ -3,7 +3,7 @@ EMPTY	:=
 SPACE	:= $(EMPTY) $(EMPTY)
 SLASH	:= /
 
-V       := @
+V       :=
 
 # try to infer the correct GCCPREFX
 ifndef GCCPREFIX
@@ -22,6 +22,7 @@ GCCPREFIX := $(shell if i386-elf-objdump -i 2>&1 | grep '^elf32-i386$$' >/dev/nu
 endif
 
 # try to infer the correct QEMU
+QEMU := ~/qemu/i386-softmmu/qemu-system-i386
 ifndef QEMU
 QEMU := $(shell if which qemu-system-i386 > /dev/null; \
 	then echo 'qemu-system-i386'; exit; \
@@ -51,7 +52,7 @@ HOSTCFLAGS	:= -g -Wall -O2 -D_FILE_OFFSET_BITS=64
 GDB		:= $(GCCPREFIX)gdb
 
 CC		:= $(GCCPREFIX)gcc
-CFLAGS	:= -fno-builtin -fno-PIC -Wall -Wno-unused-function -Wno-unused-variable -ggdb -m32 -gstabs -nostdinc $(DEFS)
+CFLAGS	:= -std=gnu99 -fno-builtin -fno-PIC -Wall -Wno-unused-function -Wno-unused-variable -ggdb -m32 -gstabs -nostdinc $(DEFS)
 CFLAGS	+= $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector)
 CTYPE	:= c S
 
@@ -271,7 +272,7 @@ define fscopy
 __fs_bin__ := $(2)$(SLASH)$(patsubst $(USER_PREFIX)%,%,$(basename $(notdir $(1))))
 SFSBINS += $$(__fs_bin__)
 $$(__fs_bin__): $(1) | $$$$(dir $@)
-	@$(COPY) $$< $$@
+	$(COPY) $$< $$@
 endef
 
 $(foreach p,$(USER_BINS),$(eval $(call fscopy,$(p),$(SFSROOT)$(SLASH))))
@@ -281,7 +282,7 @@ $(SFSROOT):
 
 $(SFSIMG): $(SFSROOT) $(SFSBINS) | $(call totarget,mksfs)
 	$(V)dd if=/dev/zero of=$@ bs=1$(M) count=128
-	@$(call totarget,mksfs) $@ $(SFSROOT)
+	$(V)$(call totarget,mksfs) $@ $(SFSROOT)
 
 $(call create_target,sfs.img)
 
@@ -321,7 +322,7 @@ qemu: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
 #	$(V)$(QEMU) -parallel stdio $(QEMUOPTS) -serial null
 
 qemu-nox: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
-	$(V)$(QEMU) -serial stdio $(QEMUOPTS) -nographic
+	$(V)$(QEMU) -serial file:/home/wzqxing/new_dir/log $(QEMUOPTS) -nographic
 
 monitor: $(UCOREIMG) $(SWAPING) $(SFSIMG)
 	$(V)$(QEMU) -monitor stdio $(QEMUOPTS) -serial null
@@ -329,10 +330,10 @@ monitor: $(UCOREIMG) $(SWAPING) $(SFSIMG)
 TERMINAL := gnome-terminal
 
 dbg4ec: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
-	$(V)$(QEMU) -S -s -parallel stdio $(QEMUOPTS) -serial null
+	$(V)$(QEMU) -S -s -parallel null $(QEMUOPTS) -serial file:/home/wzqxing/new_dir/log -monitor stdio
 
 debug: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
-	$(V)$(QEMU) -S -s -serial file:log $(QEMUOPTS) -parallel null -monitor stdio -vga std -nographic
+	$(V)$(QEMU) -S -s -serial file:/home/wzqxing/new_dir/log $(QEMUOPTS) -parallel null -monitor stdio -vga std -nographic
 
 debug-nox: $(UCOREIMG) $(SWAPIMG) $(SFSIMG)
 	$(V)$(QEMU) -S -s -serial mon:stdio $(QEMUOPTS) -nographic &
@@ -365,7 +366,8 @@ HANDIN			:= proj$(PROJ)-handin.tar.gz
 
 TOUCH_FILES		:= kern/process/proc.c
 
-MAKEOPTS		:= --quiet --no-print-directory
+#MAKEOPTS		:= --quiet --no-print-directory
+MAKEOPTS		:=
 
 grade:
 	$(V)$(MAKE) $(MAKEOPTS) clean

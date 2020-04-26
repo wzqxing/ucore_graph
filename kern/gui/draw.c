@@ -2,6 +2,7 @@
 #include <blend.h>
 #include <math.h>
 #include <compositor.h>
+#include <stdio.h>
 
 /*
  * A simple drawing library, I will add more drawing algorithm as we need it

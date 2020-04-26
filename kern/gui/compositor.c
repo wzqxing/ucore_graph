@@ -28,8 +28,9 @@ uint32_t * intermediate_framebuffer;
 /*
  * In Ubuntu's window's title bar, each row's color increments, instead of having one color for the entire title bar
  */
-uint32_t title_bar_colors[TITLE_BAR_HEIGHT] = {0xff59584f, 0xff5f5d53, 0xff58564e, 0xff57554d, 0xff56544c, 0xff55534b, \
-    0xff54524a, 0xff525049, 0xff514f48, 0xff504e47, 0xff4e4c45, 0xff4e4c45, \
+uint32_t title_bar_colors[TITLE_BAR_HEIGHT] = {
+        0xff59584f, 0xff5f5d53, 0xff58564e, 0xff57554d, 0xff56544c, 0xff55534b, \
+        0xff54524a, 0xff525049, 0xff514f48, 0xff504e47, 0xff4e4c45, 0xff4e4c45, \
         0xff4c4a44, 0xff4b4943, 0xff4a4842, 0xff484741, 0xff46453f, 0xff45443f, \
         0xff44433e, 0xff43423d, 0xff42413c, 0xff403f3a, 0xff3f3e3a};
 
@@ -446,7 +447,12 @@ void recur_add_under_windows(window_t * w, gtreenode_t * subroot) {
  * */
 void window_display(window_t * w, rect_t * rects, int size) {
     rect_region_t rect_reg;
-    if(w->is_minimized || w->parent->is_minimized) return;
+    if (w->is_minimized) {
+        return ;
+    }
+    if (w->parent && w->parent->is_minimized) {
+        return ;
+    }
     set_fill_color(w->border_color);
 
     // If the frame buffer is not null, also draw the frame buffer
@@ -487,7 +493,7 @@ void display_all_window() {
         window_display(windows_array[i], NULL, 0);
         video_memory_update(NULL, 0);
     }
-    draw_mouse();
+    //draw_mouse();
 }
 
 /*

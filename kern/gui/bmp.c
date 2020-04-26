@@ -28,7 +28,6 @@ bmp_t * bmp_create(char * filename) {
     size_t copied;
     int page = 40960;
     int now = 0;
-    cprintf("begin read bmp file\n");
     while(now < size) {
         int count; 
         if (size - now > page) {
@@ -37,7 +36,7 @@ bmp_t * bmp_create(char * filename) {
             count = size - now;
         }
         file_read(fd, buf + now, count, &copied);
-        cprintf("read %d bytes, now %lu, size %lu\n", count, now, size);
+        //cprintf("read %d bytes, now %lu, size %lu\n", count, now, size);
         now += count;
     }
     assert(now == size);

@@ -263,6 +263,7 @@ void mouse_init() {
     rects[0] = next_mouse_region.r;
     draw_mouse();
     video_memory_update(rects, 1);
+    cprintf("after draw_mouse\n");
 
     uint8_t _status;  //unsigned char
     //Enable the auxiliary mouse device
